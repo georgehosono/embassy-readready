@@ -1295,6 +1295,15 @@ where
     type Error = Error;
 }
 
+impl<T, TxDma, RxDma> embedded_io::WriteReady for Uart<'_, T, TxDma, RxDma>
+where
+    T: BasicInstance,
+{
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        self.tx.write_ready()
+    }
+}
+
 impl<T, TxDma, RxDma> embedded_io::Write for Uart<'_, T, TxDma, RxDma>
 where
     T: BasicInstance,
@@ -1306,6 +1315,16 @@ where
 
     fn flush(&mut self) -> Result<(), Self::Error> {
         self.blocking_flush()
+    }
+}
+
+impl<T, TxDma> embedded_io::WriteReady for UartTx<'_, T, TxDma>
+where
+    T: BasicInstance,
+{
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        let r = T::regs();
+        Ok(sr(r).read().txe())
     }
 }
 
