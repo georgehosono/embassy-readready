@@ -574,15 +574,34 @@ impl<'d, T: BasicInstance> embedded_io_async::Write for BufferedUartTx<'d, T> {
     }
 }
 
+impl<'d, T: BasicInstance> embedded_io::ReadReady for BufferedUart<'d, T> {
+    fn read_ready(&mut self) -> Result<bool, Self::Error> {
+        self.rx.read_ready()
+    }
+}
+
 impl<'d, T: BasicInstance> embedded_io::Read for BufferedUart<'d, T> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         self.rx.blocking_read(buf)
     }
 }
 
+impl<'d, T: BasicInstance> embedded_io::ReadReady for BufferedUartRx<'d, T> {
+    fn read_ready(&mut self) -> Result<bool, Self::Error> {
+        let buf = &T::buffered_state().rx_buf;
+        Ok(!buf.is_empty())
+    }
+}
+
 impl<'d, T: BasicInstance> embedded_io::Read for BufferedUartRx<'d, T> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         self.blocking_read(buf)
+    }
+}
+
+impl<'d, T: BasicInstance> embedded_io::WriteReady for BufferedUart<'d, T> {
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        self.tx.write_ready()
     }
 }
 
@@ -593,6 +612,13 @@ impl<'d, T: BasicInstance> embedded_io::Write for BufferedUart<'d, T> {
 
     fn flush(&mut self) -> Result<(), Self::Error> {
         self.tx.blocking_flush()
+    }
+}
+
+impl<'d, T: BasicInstance> embedded_io::WriteReady for BufferedUartTx<'d, T> {
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        let state = T::buffered_state();
+        Ok(!state.tx_buf.is_full())
     }
 }
 
